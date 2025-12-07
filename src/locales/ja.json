@@ -1,0 +1,50 @@
+{
+  "loading": {
+    "initializing": "アプリを初期化しています...",
+    "database": "データベースを初期化しています...",
+    "savingConfig": "デフォルト設定を保存しています...",
+    "fetchingData": "データを取得しています...",
+    "error": "アプリの初期化エラー！"
+  },
+  "tab_key": "キー",
+  "tab_tags": "タグ",
+  "tab_export": "エクスポート / インポート",
+  "search_key": "キーで検索",
+  "enter_key_name": "キー名を入力",
+  "add_key": "キーを追加",
+  "no_data": "データなし",
+  "keyNamePlaceholder": "キー名を入力",
+  "add": "追加",
+  "tagPlaceholder": "タグ",
+  "detail": "詳細",
+  "addField": "フィールドを追加",
+  "save": "保存",
+  "update": "更新",
+  "importExportTitle": "インポート / エクスポート",
+  "export": "エクスポート",
+  "import": "インポート",
+  "cleanAll": "すべてのデータを削除",
+  "exportSuccess": "エクスポート成功！\nJSONファイルを共有できます",
+  "exportError": "エクスポートまたは共有中にエラーが発生しました",
+  "importSuccess": "インポート成功！",
+  "importError": "ファイルからデータをインポートできません。形式を確認してください。",
+  "confirmClean": "すべて削除してもよろしいですか？",
+  "cleanSuccess": "すべてのデータを削除しました！",
+  "cleanError": "データ削除中にエラーが発生しました",
+  "settings": {
+    "title": "設定",
+    "language": "言語",
+    "select_language": "言語を選択",
+    "add_tag": "タグを追加"
+  },
+  "common": {
+    "cancel": "キャンセル",
+    "delete": "削除"
+  },
+  "tags": {
+    "title": "タグ管理",
+    "add_new": "新しいタグを追加",
+    "search_label": "タグ ...",
+    "search_placeholder": "任意のタグ..."
+  }
+}

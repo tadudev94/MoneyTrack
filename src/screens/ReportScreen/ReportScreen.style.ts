@@ -1,0 +1,70 @@
+import {
+  StyleSheet,
+} from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  overviewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    alignItems: 'center',
+    marginHorizontal: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  cardLabel: { fontSize: 13, marginTop: 6, color: '#555' },
+  cardValue: { fontSize: 15, fontWeight: 'bold', marginTop: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginVertical: 10 },
+  table: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    marginBottom: 20,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    padding: 8,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    padding: 8,
+    borderTopWidth: 1,
+    borderColor: '#eee',
+  },
+  th: { flex: 1, fontWeight: 'bold', fontSize: 13 },
+  td: { flex: 1, fontSize: 13 },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1D6F42',
+    padding: 14,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  exportText: { color: '#fff', marginLeft: 8, fontWeight: '600' },
+});

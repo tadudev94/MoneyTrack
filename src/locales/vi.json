@@ -1,0 +1,56 @@
+{
+  "tab_home": "Trang Chủ",
+  "tab_funds": "Ví",
+  "tab_income": "Thu",
+  "tab_expense": "Chi",
+  "tab_member": "Snapshot",
+  "loading": {
+    "initializing": "Đang khởi tạo ứng dụng...",
+    "database": "Đang khởi tạo cơ sở dữ liệu...",
+    "savingConfig": "Đang lưu cấu hình mặc định...",
+    "fetchingData": "Đang tải dữ liệu...",
+    "error": "Lỗi khởi tạo ứng dụng!"
+  },
+  "tab_key": "Khóa",
+  "tab_tags": "Thẻ",
+  "tab_export": "Xuất / Nhập",
+  "cancel": "Hủy",
+  "search_key": "Tìm theo key",
+  "enter_key_name": "Nhập tên key",
+  "add_key": "Thêm Key",
+  "no_data": "Không có dữ liệu",
+  "keyNamePlaceholder": "Nhập tên key",
+  "add": "Thêm",
+  "tagPlaceholder": "Tag",
+  "detail": "Chi tiết",
+  "addField": "Thêm trường",
+  "save": "Lưu",
+  "update": "Cập nhật",
+  "importExportTitle": "Import / Export",
+  "export": "Xuất dữ liệu",
+  "import": "Nhập dữ liệu",
+  "cleanAll": "Xóa toàn bộ dữ liệu",
+  "exportSuccess": "Xuất thành công!\nFile JSON đã sẵn sàng chia sẻ",
+  "exportError": "Lỗi khi xuất hoặc chia sẻ",
+  "importSuccess": "Nhập dữ liệu thành công!",
+  "importError": "Không thể nhập dữ liệu từ file. Vui lòng kiểm tra định dạng.",
+  "confirmClean": "Bạn có chắc muốn xóa tất cả?",
+  "cleanSuccess": "Đã xóa toàn bộ dữ liệu!",
+  "cleanError": "Lỗi khi xóa dữ liệu",
+  "settings": {
+    "title": "Cài Đặt",
+    "language": "Ngôn ngữ",
+    "select_language": "Chọn ngôn ngữ",
+    "add_tag": "Thêm tag mới"
+  },
+  "common": {
+    "cancel": "Hủy",
+    "delete": "Xóa"
+  },
+  "tags": {
+    "title": "Quản lý Tags",
+    "add_new": "Thêm tag mới",
+    "search_label": "Tag ...",
+    "search_placeholder": "Tag bất kì..."
+  }
+}

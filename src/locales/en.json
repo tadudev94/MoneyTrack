@@ -1,0 +1,50 @@
+{
+  "loading": {
+    "initializing": "Initializing app...",
+    "database": "Setting up database...",
+    "savingConfig": "Saving default configuration...",
+    "fetchingData": "Fetching data...",
+    "error": "App initialization error!"
+  },
+  "tab_key": "Keys",
+  "tab_tags": "Tags",
+  "tab_export": "Export / Import",
+  "search_key": "Search Key",
+  "enter_key_name": "Enter key name",
+  "add_key": "Add Key",
+  "no_data": "No data",
+  "keyNamePlaceholder": "Enter key name",
+  "add": "Add",
+  "tagPlaceholder": "Tag",
+  "detail": "Detail",
+  "addField": "Add field",
+  "save": "Save",
+  "update": "Update",
+  "importExportTitle": "Import / Export",
+  "export": "Export",
+  "import": "Import",
+  "cleanAll": "Clean All Data",
+  "exportSuccess": "Export successful!\nJSON file is ready to share",
+  "exportError": "Error during export or share",
+  "importSuccess": "Import successful!",
+  "importError": "Could not import data from file. Please check the format.",
+  "confirmClean": "Are you sure you want to delete everything?",
+  "cleanSuccess": "All data has been deleted!",
+  "cleanError": "Error deleting data",
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "select_language": "Select a language",
+    "add_tag": "Add new tag"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "tags": {
+    "title": "Tag Management",
+    "add_new": "Add new tag",
+    "search_label": "Tag ...",
+    "search_placeholder": "Any tag..."
+  }
+}
