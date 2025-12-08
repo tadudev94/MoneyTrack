@@ -1,4 +1,4 @@
-package money_v1.vn
+package money_v2.vn
 
 import android.app.Application
 import com.facebook.react.PackageList

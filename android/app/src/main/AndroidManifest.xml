@@ -17,7 +17,7 @@
       android:supportsRtl="true">
       <provider
           android:name="androidx.core.content.FileProvider"
-          android:authorities="money_v1.vn.fileprovider"
+          android:authorities="money_v2.vn.fileprovider"
           android:exported="false"
           android:grantUriPermissions="true">
           <!-- <meta-data

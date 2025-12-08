@@ -6,6 +6,8 @@ Save at android/app/my-release-key.keystore
 keytool -genkeypair -v -keystore debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000
 
 # 
+npm install
+# 
 npm install react-native-worklets
 #
 

@@ -14,7 +14,7 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
-target 'money_v1' do
+target 'money_v2' do
   config = use_native_modules!
 
   use_react_native!(

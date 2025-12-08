@@ -134,7 +134,7 @@ export default function ConfigScreen() {
             try {
               await Share.open({
                 message:
-                  'Tải ứng dụng Ví Lớp tại đây: https://play.google.com/store/apps/details?id=money_v1.vn',
+                  'Tải ứng dụng Ví Lớp tại đây: https://play.google.com/store/apps/details?id=money_v2.vn',
               });
             } catch (err) {
               console.log('❌ Share error:', err);
@@ -148,7 +148,7 @@ export default function ConfigScreen() {
           onPress={() => {
             const options = {
               AppleAppID: '1234567890',
-              GooglePackageName: 'money_v1.vn',
+              GooglePackageName: 'money_v2.vn',
               preferredAndroidMarket: AndroidMarket.Google,
               preferInApp: false,
               openAppStoreIfInAppFails: true,

@@ -63,9 +63,9 @@ export const share = async (testData : unknown) => {
       type: 'application/json',
       failOnCancel: false,
       // Thêm để ưu tiên chia sẻ đến ứng dụng cùng loại
-      packageName: Platform.OS === 'android' ? 'money_v1.vn' : undefined,
+      packageName: Platform.OS === 'android' ? 'money_v2.vn' : undefined,
       activityType:
-        Platform.OS === 'ios' ? 'money_v1.vn.share' : undefined,
+        Platform.OS === 'ios' ? 'money_v2.vn.share' : undefined,
     };
 
     console.log('Chia sẻ với tùy chọn:', shareOptions);

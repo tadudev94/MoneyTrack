@@ -24,7 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     window = UIWindow(frame: UIScreen.main.bounds)
 
     factory.startReactNative(
-      withModuleName: "money_v1",
+      withModuleName: "money_v2",
       in: window,
       launchOptions: launchOptions
     )

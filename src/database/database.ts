@@ -12,12 +12,12 @@ export const initializeDatabase = async () => {
   if (database) return database;
   try {
     database = await SQLite.openDatabase({
-      name: 'money_v1.db',
+      name: 'money_v2.db',
       location: 'default',
     });
     await database.executeSql('PRAGMA foreign_keys = ON;');
     const dropTablesQuery = `
---DROP databse money_v1;
+--DROP databse money_v2;
 DROP TABLE IF EXISTS app_depts; 
 --DROP TABLE IF EXISTS app_fund_snapshots;
 --DROP TABLE IF EXISTS tags;
