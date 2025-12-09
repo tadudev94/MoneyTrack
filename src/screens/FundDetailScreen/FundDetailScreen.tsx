@@ -10,6 +10,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { usePaging } from '../../hooks/usePaging';
 import {
+  getBalanceByFunds,
   getCountTransByGroup,
   getTotalTransByGroup,
   getTransactionsByGroupPaging,
@@ -19,16 +20,19 @@ import {
 import { useCurrentGroup } from '../../hooks/useCurrentGroup';
 import { useTransactionStore } from '../../store/transactionStore';
 import Toast from 'react-native-toast-message';
-import { styles } from './TransactionScreen.style';
+import { styles } from './FundDetailScreen.style';
 import HelpModal from '../../components/shared/HelpModal';
 import MoneyModal from '../../components/shared/MoneyModal';
 import DropdownComponent, { DropdownItem } from '../../components/shared/DropdownComponent';
-import { TransactionItem } from './TransactionItem';
+import { FundDetailItem } from './FundDetailItem';
 import { useFundStore } from '../../store/fundStore';
 import DatePicker from '../../components/shared/DatePicker';
-import { getAllTags } from '../../database/TagRepository';
+import { getAllTags, TAG_ID_CHO_VAY, TAG_ID_DUOC_TRA_NO } from '../../database/TagRepository';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useTagStore } from '../../store/tagStore';
+import { getDeptDetailsPaging } from '../../database/DeptDetailRepository';
+import { useDeptDetailStore } from '../../store/deptDetailStore';
+import { useDeptStore } from '../../store/deptStore';
 
 type TransactionScreenProps = {
   // type: any;
@@ -37,24 +41,21 @@ type TransactionScreenProps = {
   navigation: any;
 };
 
-const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
-  const { typeInput, expense_plan_id } = route.params || {};
-  let type = '';
-  if (typeInput == 'expense_plan') {
-    type = 'expense'
-    console.log(expense_plan_id)
-  }
-  else {
-    type = typeInput ?? "income"
-  }
-  const [fundId, setFundId] = useState<string | null>(null);
+const FundDetailScreen = ({ route, navigation }: TransactionScreenProps) => {
+  const { fund_id, page_title,
+    fund_name,
+    total_income } = route.params || {};
+  console.log(fund_name, total_income,)
+  const [fundId, setFundId] = useState<string | null>(fund_id);
+  const [toFundId, setToFundId] = useState<string | null>(null);
   const { group } = useCurrentGroup();
   const loadFundsByGroup = useFundStore(x => x.loadByGroup);
   const funds = useFundStore(x => x.funds);
   const fundDropdowns = funds.map(x => {
     return { label: x.name, value: x.fund_id }
   })
-  // const type = 'expense';
+
+  const refreshTran = useTransactionStore(s => s.refresh);
   const addTransaction = useTransactionStore(s => s.addTransaction);
   const updateTransaction = useTransactionStore(s => s.updateTransaction);
   const deleteTransaction = useTransactionStore(s => s.deleteTransaction);
@@ -72,12 +73,13 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
   const [enabledMap, setEnabledMap] = useState<Record<string, boolean>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const lastTran = useTransactionStore(s => s.lastUpdated);
-  console.log(lastTran, 'lasttra')
   const [showHelp, setShowHelp] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [tags, setTags] = useState<DropdownItem[]>([]);
   const [tagSelected, setTagSelected] = useState(undefined);
+  const [type, setType] = useState('move');
+  const [balance, setBalance] = useState(total_income);
 
   const resetFilter = () => {
     setSearchText('');
@@ -91,19 +93,19 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
 
   const fetchTransactions = useCallback(
     (page: number, pageSize: number, params: Record<string, any>) => {
-      if (!group?.group_id) return Promise.resolve([]);
+      getBalanceByFunds(group.group_id, [fund_id]).then(x => setBalance(x[fund_id]));
       return getTransactionsWithPlanPaging(
-        group.group_id,
+        group?.group_id,
         page,
         pageSize,
-        type,
-        expense_plan_id,
+        '',
+        fund_id,
         params.keyword || '', // lấy từ params (keyword) chứ không lấy trực tiếp searchText
       ).then(rows => {
         return rows.map(r => ({ ...r }))
       });
     },
-    [group?.group_id, lastTran], // chỉ phụ thuộc group_id
+    [lastTran, group], // chỉ phụ thuộc group_id
   );
 
   const {
@@ -116,36 +118,18 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
     reset,
   } = usePaging(fetchTransactions, 10);
 
-  const calSumary = async () => {
-    if (group?.group_id) {
-      getCountTransByGroup(group.group_id, type, params.keyword).then(
-        setCountTransaction,
-      );
-      getTotalTransByGroup(group.group_id, type, params.keyword).then(
-        setTotalTransaction,
-      );
-    }
-  };
-  useEffect(() => {
-    calSumary();
-    if (group) {
-      loadFundsByGroup(group?.group_id)
-
-    }
-  }, [group?.group_id, params]);
+  console.log(transData)
 
   useEffect(() => {
-    if (group?.group_id) {
-      setSearchText('');
-      setShowSearch(false);
-      reset({ keyword: '' });
-      calSumary();
-      getAllTags().then(x => setTags(x.map(y => ({
-        label: y.name,
-        value: y.tag_id,
-      }))));
-    }
-  }, [group?.group_id, lastTran]);
+    setSearchText('');
+    setShowSearch(false);
+    reset({ keyword: '' });
+    getAllTags().then(x => setTags(x.map(y => ({
+      label: y.name,
+      value: y.tag_id,
+    }))));
+    loadFundsByGroup(group?.group_id)
+  }, [lastTran]);
 
   const handleSave = async () => {
     if (!amount.trim() || isNaN(Number(amount))) {
@@ -164,19 +148,20 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
       });
       Toast.show({ type: 'success', text1: 'Đã cập nhật ' + type });
     } else {
-      console.log(fundId, 'aaaaaaaaaaaaaaaaa')
       if (fundId) {
         const creRes = await addTransaction({
           group_id: group.group_id,
-          type: type,
+          type: 'move',
           tag_id: tagSelected,
           fund_id: fundId,
+          to_fund_id: toFundId,
           amount: parseInt(amount, 10),
           description: desc || type,
           transaction_date: date.getTime(),
         });
         if (creRes.transaction_id != '') {
           Toast.show({ type: 'success', text1: 'Thành công' });
+          refreshTran()
         }
         else {
           Toast.show({ type: 'error', text1: 'Số Tiền ko đủ hoặc giao dịch thất bại' });
@@ -193,32 +178,32 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
     reset();
   };
 
-  const handleResetModal = () => {
-    setDate(new Date());
-    setAmount('');
-    setDesc('');
-    setEditTransaction(null);
-    setTagSelected(undefined)
-    setFundId(null);
-  }
   const handleDelete = async (item: any) => {
     await deleteTransaction(item.transaction_id);
-    Toast.show({ type: 'success', text1: 'Đã xoá ' + type });
+    Toast.show({ type: 'success', text1: 'Đã xoá ' });
     reset();
   };
 
+  const handleResetModal = () => {
+    setFundId('')
+    setType('expense')
+    setAmount('');
+    setDesc('');
+    setFundId('')
+  }
+
   const renderItem = useCallback(
     ({ item }: { item: Transaction }) => (
-      <TransactionItem
+      <FundDetailItem
         item={item}
-        type={type}
+        type={item.type}
         onEdit={i => {
           setEditTransaction({ ...i });
           setAmount(i.amount.toString());
           setDesc(i.description);
-          setTagSelected(i.tag_id);
-          setFundId(i.fund_id);
+          setFundId(i.fund_id)
           setShowModal(true);
+          setType(i.type)
         }}
         onDelete={handleDelete}
         swipeableRefs={swipeableRefs}
@@ -226,6 +211,7 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
         setEnabledMap={setEnabledMap}
         activeId={activeId}
         setActiveId={setActiveId}
+        fund_id={fund_id}
       />
     ),
     [handleDelete, enabledMap, activeId],
@@ -235,7 +221,7 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{type}</Text>
+        <Text style={styles.headerTitle}>{fund_name}</Text>
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <TouchableOpacity
             onPress={() => {
@@ -261,9 +247,9 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
 
       {/* Summary */}
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Tổng cộng</Text>
+        <Text style={styles.summaryTitle}>Số Dư</Text>
         <Text style={styles.summaryDetail}>
-          {countTransaction} khoản – {totalTransaction.toLocaleString('vi-VN')} đ
+          {balance.toLocaleString('vi-VN')} đ
         </Text>
       </View>
 
@@ -326,19 +312,21 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => {
-          handleResetModal()
-          // setEditTransaction(null);
-          // setAmount('');
-          // setDesc('');
+          setEditTransaction(null);
+          setAmount('');
+          setDesc('');
           setShowModal(true);
         }}
       >
         <Icon name="plus" size={28} color="#ffffffff" />
       </TouchableOpacity>
       <MoneyModal
-        title={editTransaction ? 'Sửa ' + type : 'Thêm ' + type}
+        title={editTransaction ? 'Sửa ' : 'Thêm '}
         visible={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          handleResetModal();
+          setShowModal(false);
+        }}
         onSave={handleSave}
         desc={desc}
         setDesc={setDesc}
@@ -350,17 +338,17 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
           <>
             <View style={{ zIndex: 1000, left: -18 }}>
               <DropdownComponent data={fundDropdowns}
-                placeholder="Chọn ví"
+                placeholder="Chọn ví Nguồn"
                 searchPlaceholder="Tìm ví..."
                 value={fundId}
                 onChange={setFundId} />
             </View>
             <View style={{ zIndex: 1000, left: -18 }}>
-              <DropdownComponent data={tags}
-                placeholder="Chọn Tag"
-                searchPlaceholder="Tìm Tag"
-                value={tagSelected}
-                onChange={setTagSelected} />
+              <DropdownComponent data={fundDropdowns}
+                placeholder="Chọn ví Gốc"
+                searchPlaceholder="Tìm ví..."
+                value={toFundId}
+                onChange={setToFundId} />
             </View>
             <View style={{ width: 290, margin: 5, marginLeft: 18, zIndex: 1000, left: -18 }}>
               <DatePicker
@@ -373,19 +361,8 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
           </>
         }
       />
-      <HelpModal
-        visible={showHelp}
-        onClose={() => setShowHelp(false)}
-        title="Hướng dẫn màn hình Thu"
-        tips={[
-          'Nhấn giữ vào Thu để mở thao tác Sửa/Xoá.',
-          'Nhấn nút dấu + để thêm Thu mới.',
-          'Tổng số Thu và số tiền hiển thị ở phần đầu màn hình.',
-          'Icon xanh lá đại diện cho đóng Ví, icon xanh dương đại diện cho các khoản ngoài Ví'
-        ]}
-      />
     </View>
   );
 };
 
-export default TransactionScreen;
+export default FundDetailScreen;

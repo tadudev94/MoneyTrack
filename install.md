@@ -82,4 +82,7 @@ npx react-native run-android
 #
  cd android
 ./gradlew assembleRelease
+cd ..
+adb install -r android/app/build/outputs/apk/release/app-release.apk
+
 

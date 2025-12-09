@@ -42,6 +42,8 @@ const ReportScreen: React.FC = () => {
     }
   }, [group, lastUpdated]);
 
+  console.log(transactionSummary)
+
   // helper chọn màu theo giá trị
   const getBalanceColor = (val: number) => {
     if (val > 0) return 'red'; // thiếu
@@ -62,9 +64,9 @@ const ReportScreen: React.FC = () => {
 
       // Bảng 2: Ví
       sheetData.push(['DANH SÁCH Ví']);
-      sheetData.push(['Tên Ví', 'Tổng cần thu', 'Đã thu', 'Còn thiếu']);
+      sheetData.push(['Tên Ví', 'Số Dư']);
       funds.forEach(f => {
-        sheetData.push([f.name, f.total_required, f.paid, f.remaining]);
+        sheetData.push([f.name, f.balance]);
       });
       sheetData.push([]);
 
@@ -88,12 +90,14 @@ const ReportScreen: React.FC = () => {
           new Date(t.transaction_date).toLocaleDateString(),
           t.type,
           t.amount,
+          t.to_fund_name,
           t.description ?? '',
           t.fund_name ?? '-',
           t.member_name ?? '-',
         ]);
       });
 
+      console.log(transactionSummary)
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Report');
@@ -163,78 +167,14 @@ const ReportScreen: React.FC = () => {
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <Text style={styles.th}>Tên Ví</Text>
-            <Text style={styles.th}>Tổng cần thu</Text>
-            <Text style={styles.th}>Đã thu</Text>
-            <Text style={styles.th}>Còn thiếu</Text>
+            <Text style={styles.th}>Số Dư</Text>
           </View>
           {funds.map((f, i) => (
             <View key={i} style={styles.tableRow}>
               <Text style={styles.td}>{f.name}</Text>
-              <Text style={styles.td}>{f.total_required.toLocaleString()}</Text>
-              <Text style={styles.td}>{f.paid.toLocaleString()}</Text>
-              <Text
-                style={[styles.td, { color: getBalanceColor(f.remaining) }]}
-              >
-                {f.remaining.toLocaleString()}
-              </Text>
+              <Text style={styles.td}>{f.balance?.toLocaleString()}</Text>
             </View>
           ))}
-        </View>
-
-        {/* 3. Danh sách thành viên */}
-        <Text style={styles.sectionTitle}>
-          THÀNH VIÊN - Ví : SỐ TIỀN CẦN THU
-        </Text>
-        <View style={{ flexDirection: 'row' }}>
-          {/* Cột thành viên (cố định) */}
-          <View style={{ minWidth: 150 }}>
-            <View style={[styles.tableHeader, { backgroundColor: '#f0f0f0' }]}>
-              <Text style={styles.th}>Thành viên</Text>
-            </View>
-            {members.map((m, i) => (
-              <View key={i} style={{ ...styles.tableRow, minWidth: 120 }}>
-                <Text style={styles.td}>{m.member_name}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Cột Ví (scroll ngang) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View>
-              {/* Header */}
-              <View style={styles.tableHeader}>
-                {funds.map((f, idx) => (
-                  <Text key={idx} style={[styles.th, { minWidth: 124 }]}>
-                    {f.name}
-                  </Text>
-                ))}
-              </View>
-
-              {/* Rows */}
-              {members.map((m, i) => (
-                <View key={i} style={styles.tableRow}>
-                  {funds.map((f, idx) => {
-                    const val = m.fund_balances[f.fund_id];
-                    return (
-                      <Text
-                        key={idx}
-                        style={[
-                          styles.td,
-                          {
-                            minWidth: 100,
-                            color:
-                              val === undefined ? '#000' : getBalanceColor(val),
-                          },
-                        ]}
-                      >
-                        {val === undefined ? '-' : val.toLocaleString()}
-                      </Text>
-                    );
-                  })}
-                </View>
-              ))}
-            </View>
-          </ScrollView>
         </View>
 
         {/* 4. Danh sách giao dịch */}
@@ -243,18 +183,18 @@ const ReportScreen: React.FC = () => {
           <View style={styles.table}>
             {/* Header */}
             <View style={styles.tableHeader}>
-              <Text style={[styles.th, { minWidth: 100 }]}>Ngày</Text>
+              <Text style={[styles.th, { minWidth: 150 }]}>Ngày</Text>
               <Text style={[styles.th, { minWidth: 150 }]}>Mô Tả</Text>
-              <Text style={[styles.th, { minWidth: 120 }]}>Thành viên</Text>
-              <Text style={[styles.th, { minWidth: 80 }]}>Loại</Text>
-              <Text style={[styles.th, { minWidth: 100 }]}>Số tiền</Text>
-              <Text style={[styles.th, { minWidth: 120 }]}>Ví</Text>
+              <Text style={[styles.th, { minWidth: 100 }]}>Loại</Text>
+              <Text style={[styles.th, { minWidth: 150 }]}>Số tiền</Text>
+              <Text style={[styles.th, { minWidth: 150 }]}>Từ</Text>
+              <Text style={[styles.th, { minWidth: 150 }]}>Tới Ví</Text>
             </View>
 
             {/* Rows */}
             {transactionSummary.transactions.map((t, i) => (
               <View key={i} style={styles.tableRow}>
-                <Text style={[styles.td, { minWidth: 100 }]}>
+                <Text style={[styles.td, { minWidth: 150 }]}>
                   {new Date(t.transaction_date).toLocaleDateString('vi-VN', {
                     day: '2-digit',
                     month: '2-digit',
@@ -268,25 +208,25 @@ const ReportScreen: React.FC = () => {
                 <Text style={[styles.td, { minWidth: 150 }]}>
                   {t.description}
                 </Text>
-                <Text style={[styles.td, { minWidth: 120 }]}>
-                  {t.member_name ?? '-'}
-                </Text>
                 <Text
                   style={[
                     styles.td,
                     {
-                      minWidth: 80,
-                      color: t.type === 'income' ? '#4CAF50' : '#F44336',
+                      minWidth: 100,
+                      color: t.type === 'income' ? '#4CAF50' :t.type === 'expense'? '#F44336': "#463c3bff",
                     },
                   ]}
                 >
-                  {t.type === 'income' ? 'Thu' : 'Chi'}
+                  {t.type === 'income' ? 'Thu' : t.type === 'expense' ? 'Chi' : 'Chuyển'}
                 </Text>
-                <Text style={[styles.td, { minWidth: 100 }]}>
+                <Text style={[styles.td, { minWidth: 150 }]}>
                   {t.amount.toLocaleString()}
                 </Text>
-                <Text style={[styles.td, { minWidth: 120 }]}>
+                <Text style={[styles.td, { minWidth: 150 }]}>
                   {t.fund_name ?? '-'}
+                </Text>
+                <Text style={[styles.td, { minWidth: 150 }]}>
+                  {t.to_fund_name ?? '-'}
                 </Text>
               </View>
             ))}

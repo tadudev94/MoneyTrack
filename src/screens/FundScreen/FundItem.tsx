@@ -37,10 +37,9 @@ export const FundItem = ({
       style={styles.fundCard}
       onPress={() =>
         navigation.navigate('FundDetail', {
-          fundId: item.fund_id,
-          fundName: item.name,
-          totalIncome: item.balance,
-          feePerMember,
+          fund_id: item.fund_id,
+          fund_name: item.name,
+          total_income: item.balance
         })
       }
     >

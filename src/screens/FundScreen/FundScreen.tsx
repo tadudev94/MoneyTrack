@@ -131,7 +131,6 @@ export default function FundScreen() {
         const expected = await getTotalExpectedByGroup(group.group_id);
         setTotalExpected(expected);
       }
-      console.log('feech');
     };
     fetch();
   }, [group, lastUpdateMemberFunds, lastFundUpdated]);

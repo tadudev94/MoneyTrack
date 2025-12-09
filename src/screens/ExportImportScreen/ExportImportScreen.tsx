@@ -3,16 +3,16 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { Button } from 'react-native-paper';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
-import { CleanAllData, GetExportData } from '../database/ExportImportManager';
+import { CleanAllData, GetExportData } from '../../database/ExportImportManager';
 import { createByTag } from '../database/TagManager';
 import { pick, types } from '@react-native-documents/picker';
-import { Data, KeyTag, Tag, Key } from '../database/types';
+import { Data, KeyTag, Tag, Key } from '../../database/types';
 import { createByKey } from '../database/KeyManager';
 import { addTagToKey } from '../database/KeyTagManager';
 import { importData } from '../database/DataManager';
-import Header from '../components/shared/Header';
-import { AlertHelper as Alert } from '../providers/Alert';
-import BannerAds from '../components/shared/BannerAds';
+import Header from '../../components/shared/Header';
+import { AlertHelper as Alert } from '../../providers/Alert';
+import BannerAds from '../../components/shared/BannerAds';
 import { useTranslation } from 'react-i18next';
 
 const ExportImportScreen: React.FC = () => {

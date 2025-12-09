@@ -3,9 +3,7 @@ import { getDatabase } from './database';
 export type FundReport = {
   fund_id: string;
   name: string;
-  total_required: number; 
-  paid: number; // đã thu (tổng contributions)
-  remaining: number; // còn thiếu
+  balance: number;
 };
 
 export type MemberFundReport = {
@@ -22,6 +20,7 @@ export type TransactionReport = {
   transaction_date: number;
   fund_id: string | null;
   fund_name: string | null;
+  to_fund_name: string | null;
   member_id: string | null;
   member_name: string | null;
 };
@@ -47,15 +46,19 @@ export const getTransactionsReport = async (
             t.transaction_date,
             t.fund_id,
             f.name AS fund_name,
+            t.to_fund_id,
+            ft.name as to_fund_name,
             t.member_id,
             m.name AS member_name
      FROM app_transactions t
      LEFT JOIN app_funds f ON t.fund_id = f.fund_id
+     LEFT JOIN app_funds ft ON ft.fund_id = t.to_fund_id
      LEFT JOIN app_members m ON t.member_id = m.member_id
      WHERE t.group_id = ?
      ORDER BY t.transaction_date DESC`,
     [groupId],
   );
+
 
   const transactions: TransactionReport[] = [];
   let total_income = 0;
@@ -68,6 +71,7 @@ export const getTransactionsReport = async (
       transaction_id: row.transaction_id,
       type: row.type,
       amount: row.amount,
+      to_fund_name: row.to_fund_name,
       description: row.description,
       transaction_date: row.transaction_date,
       fund_id: row.fund_id,
@@ -116,39 +120,56 @@ export const getFundsReport = async (
 ): Promise<FundReport[]> => {
   const db = getDatabase();
 
+  // Lấy tất cả ví trong group
   const [fundsResult] = await db.executeSql(
-    `SELECT f.fund_id, f.name, 0, COUNT(m.member_id) as member_count
-     FROM app_funds f
-     LEFT JOIN app_fund_members m ON m.fund_id = f.fund_id
-     WHERE f.group_id = ?
-     GROUP BY f.fund_id`,
-    [groupId],
+    `
+    SELECT fund_id, name
+    FROM app_funds
+    WHERE group_id = ?
+    `,
+    [groupId]
   );
 
   const funds: FundReport[] = [];
+
   for (let i = 0; i < fundsResult.rows.length; i++) {
     const row = fundsResult.rows.item(i);
-    const total_required = 0 * row.member_count;
 
-    // Đã thu
-    const [paidResult] = await db.executeSql(
-      `SELECT IFNULL(SUM(amount), 0) as total_paid
-       FROM app_transactions WHERE fund_id = ?`,
-      [row.fund_id],
+    // === LẤY BALANCE DỰA TRÊN TRANSACTIONS ===
+    const [balanceResult] = await db.executeSql(
+      `
+      SELECT 
+        IFNULL(SUM(
+          CASE
+            WHEN t.type = 'income' THEN t.amount                -- thu vào
+            WHEN t.type = 'expense' THEN -t.amount              -- chi ra
+            WHEN t.type = 'move' AND t.fund_id = ? THEN -t.amount     -- chuyển đi
+            WHEN t.type = 'move' AND t.to_fund_id = ? THEN t.amount   -- chuyển đến
+            ELSE 0
+          END
+        ), 0) AS balance
+      FROM app_transactions t
+      WHERE t.group_id = ?
+        AND (
+              t.fund_id = ? 
+              OR (t.type = 'move' AND t.to_fund_id = ?)
+            )
+      `,
+      [row.fund_id, row.fund_id, groupId, row.fund_id, row.fund_id]
     );
-    const paid = paidResult.rows.item(0).total_paid;
+
+    const balance = balanceResult.rows.item(0).balance;
 
     funds.push({
       fund_id: row.fund_id,
       name: row.name,
-      total_required,
-      paid,
-      remaining: total_required - paid,
+      balance,        // chỉ trả ra balance
     });
   }
 
   return funds;
 };
+
 
 // Lấy danh sách thành viên trong group và số tiền còn thiếu theo từng Ví
 export const getMembersFundReport = async (
@@ -192,6 +213,5 @@ export const getMembersFundReport = async (
       fund_balances,
     });
   }
-  console.log(members);
   return members;
 };

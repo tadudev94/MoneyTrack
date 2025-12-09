@@ -14,7 +14,6 @@ import { ActivityIndicator } from 'react-native-paper';
 import { useCurrentGroup } from '../../hooks/useCurrentGroup';
 import { usePaging } from '../../hooks/usePaging';
 import {
-  getMembersByGroupPaging,
   Member,
 } from '../../database/MemberRepository';
 import Toast from 'react-native-toast-message';

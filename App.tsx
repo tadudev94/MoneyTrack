@@ -15,7 +15,7 @@ import TagScreen from './src/screens/TagScreen/TagScreen';
 import DeptDetailScreen from './src/screens/DeptDetailScreen/DeptDetailScreen';
 import ExpensePlanScreen from './src/screens/ExpensePlanScreen/ExpensePlanScreen';
 import ConfigScreen from './src/screens/ConfigScreen/ConfigScreen';
-import FundDetailScreen from './src/screens/FundDetails/FundDetailScreen';
+import FundDetailScreen from './src/screens/FundDetailScreen/FundDetailScreen';
 import IncomeFilterScreen from './src/screens/TransactionScreen/IncomeFilterScreen';
 import SnapshotScreen from './src/screens/SnapshotScreen/SnapshotScreen'
 import DeptScreen from './src/screens/DeptScreen/DeptScreen'
@@ -26,7 +26,7 @@ import { View } from 'react-native';
 import './src/locales/index'; // phải init trước
 import React, { useEffect } from 'react';
 import { useGroupStore } from './src/store/groupStore';
-import TransactionHistoryScreen from './src/screens/FundDetails/TransactionHistoryScreen';
+import TransactionHistoryScreen from './src/screens/FundDetails2/TransactionHistoryScreen';
 import MemberSettingsScreen from './src/screens/MemberScreen/MemberSettingsScreen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

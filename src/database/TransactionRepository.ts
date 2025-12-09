@@ -1,18 +1,19 @@
 import { getDatabase } from './database';
 import uuidv4 from '../utils/uuid';
-import Toast from 'react-native-toast-message';
 
 export interface Transaction {
   transaction_id: string;
   group_id: string;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'move';
   amount: number;
   description?: string;
   transaction_date: number;
   fund_id: string;
+  to_fund_id?: string;
   tag_id?: string | undefined;
   tag_name?: string | undefined;
   fund_name?: string;
+  to_fund_name?: string;
   member_id?: string;
   member_name?: string;
   created_at: number;
@@ -85,69 +86,87 @@ export const getTransactionsWithPlanPaging = async (
   groupId: string,
   page: number = 1,
   pageSize: number = 20,
-  type?: 'income' | 'expense',
+  type?: 'income' | 'expense' | '',
+  fund_id?: string,
   expense_plan_id?: string,
   searchText?: string,
 ): Promise<Transaction[]> => {
-
-  const db = getDatabase();
-  const offset = (page - 1) * pageSize;
-  let params: any[] = [groupId];
-  // JOIN động
-  let joinPlan = "";
-  if (expense_plan_id) {
-    joinPlan = `LEFT JOIN app_expense_plans p ON p.tag_id = t.tag_id AND p.expense_plan_id = ? 
+  try {
+    const db = getDatabase();
+    const offset = (page - 1) * pageSize;
+    let params: any[] = [groupId];
+    // JOIN động
+    let joinPlan = "";
+    if (expense_plan_id) {
+      joinPlan = `LEFT JOIN app_expense_plans p ON p.tag_id = t.tag_id AND p.expense_plan_id = ? 
     
     AND strftime('%Y-%m', t.transaction_date / 1000, 'unixepoch', '+7 hours')
         = strftime('%Y-%m', p.from_date / 1000, 'unixepoch', '+7 hours')`;
-    params = [expense_plan_id, groupId];
-  }
+      params = [expense_plan_id, groupId];
+    }
 
-  let query = `
+    let query = `
     SELECT t.transaction_id, t.group_id, t.type, t.amount, t.description,
            t.transaction_date, t.fund_id, t.member_id, t.created_at,
+           t.to_fund_id, ft.name as to_fund_name,
            m.name as member_name, f.name as fund_name, tg.name as tag_name, tg.tag_id
     FROM app_transactions t
     LEFT JOIN app_members m ON t.member_id = m.member_id
     LEFT JOIN app_funds f ON f.fund_id = t.fund_id
+    LEFT JOIN app_funds ft ON ft.fund_id = t.to_fund_id
     LEFT JOIN app_tags tg ON t.tag_id = tg.tag_id
     ${joinPlan}
     WHERE t.group_id = ?
   `;
 
-  if (type) {
-    query += ` AND t.type = ?`;
-    params.push(type);
-  }
+    if (type) {
+      query += ` AND t.type = ?`;
+      params.push(type);
+    }
 
-  // filter plan
-  if (expense_plan_id) {
-    query += ` AND p.expense_plan_id = ?`;
-    params.push(expense_plan_id);
-  }
-  console.log(query, params)
-  // search
-  if (searchText) {
-    query += ` AND (t.description LIKE ? OR m.name LIKE ? OR f.name LIKE ?)`;
-    const kw = `%${searchText}%`;
-    params.push(kw, kw, kw);
-  }
+    if (fund_id) {
+      query += ` 
+    AND (
+          t.fund_id = ? 
+          OR (t.type = 'move' AND t.to_fund_id = ?)
+        )
+  `;
+      params.push(fund_id, fund_id);
+    }
 
-  query += `
+    // if (fund_id) {
+    //   query += ` AND f.fund_id = ? `;
+    //   params.push(fund_id);
+    // }
+    // filter plan
+    if (expense_plan_id) {
+      query += ` AND p.expense_plan_id = ?`;
+      params.push(expense_plan_id);
+    }
+    // search
+    if (searchText) {
+      query += ` AND (t.description LIKE ? OR m.name LIKE ? OR f.name LIKE ?)`;
+      const kw = `%${searchText}%`;
+      params.push(kw, kw, kw);
+    }
+
+    query += `
     ORDER BY t.transaction_date DESC
     LIMIT ? OFFSET ?
   `;
-  params.push(pageSize, offset);
+    params.push(pageSize, offset);
 
-  const [result] = await db.executeSql(query, params);
+    const [result] = await db.executeSql(query, params);
 
-  const rows: Transaction[] = [];
-  for (let i = 0; i < result.rows.length; i++) {
-    rows.push(result.rows.item(i));
+    const rows: Transaction[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      rows.push(result.rows.item(i));
+    }
+    console.log(rows)
+    return rows;
+  } catch (ex) {
+    console.log(ex)
   }
-  console.log(rows)
-  return rows;
-
 };
 
 
@@ -173,8 +192,8 @@ export const createTransaction = async (
 
     await db.executeSql(
       `INSERT INTO app_transactions 
-      (transaction_id, tag_id, group_id, type, amount, description, transaction_date, fund_id, member_id, created_at) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (transaction_id, tag_id, group_id, type, amount, description, transaction_date, fund_id, member_id, created_at, to_fund_id) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         tx.tag_id,
@@ -186,6 +205,7 @@ export const createTransaction = async (
         tx.fund_id ?? null,
         tx.member_id ?? null,
         createdAt,
+        tx.to_fund_id
       ],
     );
     return {
@@ -235,8 +255,17 @@ export const getTransactionsByFund = async (
 export const getBalanceByGroup = async (groupId: string): Promise<number> => {
   const db = getDatabase();
   const [result] = await db.executeSql(
-    `SELECT SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as balance 
-     FROM app_transactions WHERE group_id = ?`,
+    `SELECT 
+  SUM(
+    CASE 
+      WHEN type = 'income' THEN amount
+      WHEN type = 'expense' THEN -amount
+      ELSE 0
+    END
+  ) AS balance
+FROM app_transactions
+WHERE group_id = ?
+  AND type IN ('income', 'expense');`,
     [groupId],
   );
   return result.rows.item(0).balance ?? 0;
@@ -246,10 +275,20 @@ export const getBalanceByGroup = async (groupId: string): Promise<number> => {
 export const getBalanceByFund = async (fundId: string): Promise<number> => {
   const db = getDatabase();
   const [result] = await db.executeSql(
-    `SELECT SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END) as balance 
-     FROM app_transactions WHERE fund_id = ?`,
-    [fundId],
+    `SELECT SUM(
+        CASE 
+          WHEN type = 'income' THEN amount
+          WHEN type = 'expense' THEN -amount
+          WHEN type = 'move' AND fund_id = ? THEN -amount          -- chuyển đi
+          WHEN type = 'move' AND to_fund_id = ? THEN amount        -- chuyển đến
+          ELSE 0
+        END
+      ) AS balance
+     FROM app_transactions
+     WHERE fund_id = ? OR to_fund_id = ?`,
+    [fundId, fundId, fundId, fundId]
   );
+
   return result.rows.item(0).balance ?? 0;
 };
 
@@ -513,7 +552,7 @@ export const getTotalIncomeByFunds = async (
   return result;
 };
 
-export const getBalanceByFunds = async (
+export const getBalanceByFunds1 = async (
   groupId: string,
   fundIds: string[],
 ): Promise<Record<string, number>> => {
@@ -527,7 +566,8 @@ export const getBalanceByFunds = async (
   SUM(
     CASE 
       WHEN type = 'income' THEN amount
-      ELSE -amount 
+      WHEN type = 'expense' THEN -amount
+      ELSE 0
     END
   ) AS total
 FROM app_transactions
@@ -550,6 +590,82 @@ GROUP BY fund_id;`,
 
   return result;
 };
+
+export const getBalanceByFunds = async (
+  groupId: string,
+  fundIds: string[],
+): Promise<Record<string, number>> => {
+  if (fundIds.length === 0) return {};
+
+  const db = getDatabase();
+  const placeholders = fundIds.map(() => '?').join(',');
+
+  const sql = `
+    SELECT 
+        tmp.fund_id,
+        SUM(tmp.value) AS total
+    FROM (
+        -- income / expense
+        SELECT 
+            fund_id,
+            CASE 
+                WHEN type = 'income' THEN amount
+                WHEN type = 'expense' THEN -amount
+                ELSE 0
+            END AS value
+        FROM app_transactions
+        WHERE type IN ('income', 'expense')
+          AND fund_id IN (${placeholders})
+          AND group_id = ?
+
+        UNION ALL
+
+        -- move (source fund)
+        SELECT 
+            fund_id,
+            -amount AS value
+        FROM app_transactions
+        WHERE type = 'move'
+          AND fund_id IN (${placeholders})
+          AND group_id = ?
+
+        UNION ALL
+
+        -- move (destination fund)
+        SELECT 
+            to_fund_id AS fund_id,
+            amount AS value
+        FROM app_transactions
+        WHERE type = 'move'
+          AND to_fund_id IN (${placeholders})
+          AND group_id = ?
+    ) AS tmp
+    GROUP BY tmp.fund_id;
+  `;
+
+  const params = [
+    ...fundIds, groupId,      // income/expense
+    ...fundIds, groupId,      // move source
+    ...fundIds, groupId,      // move destination
+  ];
+
+  const [res] = await db.executeSql(sql, params);
+
+  const result: Record<string, number> = {};
+
+  for (let i = 0; i < res.rows.length; i++) {
+    const row = res.rows.item(i);
+    result[row.fund_id] = row.total ?? 0;
+  }
+
+  // fund nào không có giao dịch -> trả 0
+  fundIds.forEach(id => {
+    if (!(id in result)) result[id] = 0;
+  });
+
+  return result;
+};
+
 
 export const getPaidAmountByMembers = async (
   group_id: string,

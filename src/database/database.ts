@@ -18,14 +18,14 @@ export const initializeDatabase = async () => {
     await database.executeSql('PRAGMA foreign_keys = ON;');
     const dropTablesQuery = `
 --DROP databse money_v2;
-DROP TABLE IF EXISTS app_depts; 
+DROP TABLE IF EXISTS app_transactions; 
 --DROP TABLE IF EXISTS app_fund_snapshots;
 --DROP TABLE IF EXISTS tags;
 --DROP TABLE IF EXISTS data;
 --DROP TABLE IF EXISTS data_tags;
 `;
 
-//s await database.executeSql(dropTablesQuery);
+    // await database.executeSql(dropTablesQuery);
     // console.log('delete table')
     await createTables();
     await ensureDefaultTags();
@@ -48,8 +48,32 @@ const createTables = async () => {
         await database.executeSql(query);
       }
     }
+    await alterTable();
   } catch (error) {
     console.error('Table creation failed', error);
+    throw error;
+  }
+};
+
+const alterTable = async () => {
+  if (!database) throw new Error('Database not initialized');
+
+  try {
+    const result = await database.executeSql(
+      "PRAGMA table_info(app_transactions);"
+    );
+
+    const columns = result[0].rows.raw();
+    const exists = columns.some(col => col.name === "to_fund_id");
+
+    if (!exists) {
+      await database.executeSql(
+        "ALTER TABLE app_transactions ADD COLUMN to_fund_id TEXT"
+      );
+    }
+
+  } catch (error) {
+    console.error('alter table failed', error);
     throw error;
   }
 };

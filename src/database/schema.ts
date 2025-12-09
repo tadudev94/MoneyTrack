@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS app_transactions (
     transaction_date INTEGER NOT NULL,
     group_id TEXT NOT NULL,
     fund_id TEXT,
+    to_fund_id TEXT,
     member_id TEXT,
     tag_id TEXT,
     created_at INTEGER NOT NULL,
