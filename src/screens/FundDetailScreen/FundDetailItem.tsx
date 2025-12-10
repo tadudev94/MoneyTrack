@@ -131,7 +131,7 @@ export const FundDetailItem = React.memo(
                 ) : null}
               </View>
               <Text style={[styles.itemAmount, { color: type == 'income' ? '#4CAF50' : type === "expense" ? '#c62828' : "#a09393ff" }]}>
-                {type == 'income' || (type == 'move' && fund_id == item.fund_id) ? '-' : '+'} {formatMoney(item.amount)} đ
+                {type == 'income' ? '+' : type == 'expense' ? '-' :fund_id == item.fund_id ? "-" : "+" } {formatMoney(item.amount)} đ
               </Text>
             </View>
           </Swipeable>

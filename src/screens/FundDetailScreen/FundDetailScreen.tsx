@@ -345,7 +345,7 @@ const FundDetailScreen = ({ route, navigation }: TransactionScreenProps) => {
             </View>
             <View style={{ zIndex: 1000, left: -18 }}>
               <DropdownComponent data={fundDropdowns}
-                placeholder="Chọn ví Gốc"
+                placeholder="Chọn ví Đích"
                 searchPlaceholder="Tìm ví..."
                 value={toFundId}
                 onChange={setToFundId} />

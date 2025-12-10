@@ -26,7 +26,6 @@ import { View } from 'react-native';
 import './src/locales/index'; // phải init trước
 import React, { useEffect } from 'react';
 import { useGroupStore } from './src/store/groupStore';
-import TransactionHistoryScreen from './src/screens/FundDetails2/TransactionHistoryScreen';
 import MemberSettingsScreen from './src/screens/MemberScreen/MemberSettingsScreen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -55,10 +54,6 @@ function RootNavigator() {
         component={FundDetailScreen}
       />
       <RootStackNavigator.Screen name="Config" component={ConfigScreen} />
-      <RootStackNavigator.Screen
-        name="TransactionHistory"
-        component={TransactionHistoryScreen}
-      />
       <RootStackNavigator.Screen
         name="MemberSettings"
         component={MemberSettingsScreen}

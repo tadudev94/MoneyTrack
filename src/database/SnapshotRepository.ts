@@ -25,18 +25,33 @@ const getFundBalance = async (fundId: string): Promise<number> => {
      WHERE fund_id = ? AND type = 'income'`,
         [fundId]
     );
+    const [incomeMoveRes] = await db.executeSql(
+        `SELECT IFNULL(SUM(amount), 0) as total 
+     FROM app_transactions 
+     WHERE to_fund_id = ? AND type = 'move'`,
+        [fundId]
+    );
+    const [expenseMoveRes] = await db.executeSql(
+        `SELECT IFNULL(SUM(amount), 0) as total 
+     FROM app_transactions 
+     WHERE fund_id = ? AND type = 'move'`,
+        [fundId]
+    );
 
-    const [expenseRes] = await db.executeSql(
+     const [expenseRes] = await db.executeSql(
         `SELECT IFNULL(SUM(amount), 0) as total 
      FROM app_transactions 
      WHERE fund_id = ? AND type = 'expense'`,
         [fundId]
     );
 
+
     const income = incomeRes.rows.item(0).total;
     const expense = expenseRes.rows.item(0).total;
+    const incomeMove = incomeMoveRes.rows.item(0).total;
+    const expenseMove = expenseMoveRes.rows.item(0).total;
 
-    return income - expense;
+    return income + incomeMove - expense - expenseMove;
 };
 
 // ====== Tạo snapshot tổng ======

@@ -177,7 +177,7 @@ const HomeScreen = () => {
           <View style={styles.card}>
             <View style={styles.overviewRow}>
               <OverviewItem
-                label="Số Tiền hiện có"
+                label="Số Dư"
                 value={(income - expense).toLocaleString() + ' đ'}
                 icon="wallet"
               />
