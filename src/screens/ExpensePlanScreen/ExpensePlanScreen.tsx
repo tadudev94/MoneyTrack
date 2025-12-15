@@ -24,6 +24,7 @@ import { Tag, getAllTags } from '../../database/TagRepository';
 import DropdownComponent, { DropdownItem } from '../../components/shared/DropdownComponent';
 import DatePicker from '../../components/shared/DatePicker';
 import MoneyInput from '../../components/shared/MoneyInput';
+import { formatMoney } from '../../utils/moneyFormat';
 
 const ExpensePlanScreen = () => {
   const addExpensePlan = useExpensePlanStore(s => s.addExpensePlan);
@@ -31,6 +32,7 @@ const ExpensePlanScreen = () => {
   const deleteExpensePlan = useExpensePlanStore(s => s.deleteExpensePlan);
   const lastUpdated = useExpensePlanStore(s => s.lastUpdated);
 
+  const [dateFilter, setDateFilter] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
   const [planValue, setPlanValue] = useState('');
   const [fromDate, setFromDate] = useState<Date>(new Date());
@@ -74,21 +76,31 @@ const ExpensePlanScreen = () => {
         page,
         pageSize,
         params.tagId,
-        params.keyword
+        params.keyword,
+        params.month
       ).then(res => res.plans.map(p => ({ ...p })));
     },
     []
   );
 
-  const { data: plans, loading, hasMore, setParams, loadPage, reset } = usePaging(fetchPlans, 10);
+  const { data: plans, loading, hasMore, setParams, params, loadPage, reset } = usePaging(fetchPlans, 1000);
+  console.log(plans)
 
   useEffect(() => {
-    reset({ keyword: '', tagId: undefined });
+    // reset({ keyword: '', tagId: undefined, month: new Date() });
     getAllTags().then(x => setTags(x.map(y => ({
       label: y.name,
       value: y.tag_id,
     }))));
   }, [lastUpdated]);
+
+  useEffect(() => {
+    reset({
+      keyword: searchText,
+      tagId: tagSelected,
+      month: dateFilter
+    });
+  }, [dateFilter]);
 
   const handleSave = async () => {
     if (!tagSelected) {
@@ -117,11 +129,18 @@ const ExpensePlanScreen = () => {
     reset();
   };
 
+  const handleChangeDate = (date: Date) => {
+    setDateFilter(date);
+  }
   const handleDelete = async (item: ExpensePlan) => {
     await deleteExpensePlan(item.expense_plan_id);
     Toast.show({ type: 'success', text1: 'Đã xoá' });
     reset();
   };
+
+  const totalPlanned = plans.reduce((x, s) => s.value + x, 0);
+  const totalSpent = plans.reduce((x, s) => s.total_spent + x, 0);
+  const remaining = totalPlanned - totalSpent;
 
   const renderItem = useCallback(
     ({ item }: { item: ExpensePlan }) => (
@@ -196,6 +215,44 @@ const ExpensePlanScreen = () => {
           </TouchableOpacity>
         </View>
       )}
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryHeader}>
+          <Text style={styles.summaryTitle}>Tổng quan</Text>
+          <DatePicker
+            value={dateFilter}
+            onChange={handleChangeDate}
+            mode="date"
+          />
+        </View>
+
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryBox}>
+            <Text style={styles.summaryLabel}>Dự kiến</Text>
+            <Text style={styles.planAmount}>
+              {formatMoney(totalPlanned)} đ
+            </Text>
+          </View>
+
+          <View style={styles.summaryBox}>
+            <Text style={styles.summaryLabel}>Đã chi</Text>
+            <Text style={styles.spentAmount}>
+              {formatMoney(totalSpent)} đ
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.remainingBox}>
+          <Text style={styles.summaryLabel}>Còn lại</Text>
+          <Text
+            style={[
+              styles.remainingAmount,
+              remaining < 0 && styles.overSpent,
+            ]}
+          >
+            {formatMoney(remaining)} đ
+          </Text>
+        </View>
+      </View>
 
       <FlatList
         data={plans}

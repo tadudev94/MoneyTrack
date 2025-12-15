@@ -1,5 +1,6 @@
 import { getDatabase } from './database';
 import uuidv4 from '../utils/uuid';
+import { getExpensePlanById } from './ExpensePlanRepository';
 
 export interface Transaction {
   transaction_id: string;
@@ -81,6 +82,70 @@ export const getTransactionsByGroupPaging = async (
   return rows;
 };
 
+export const debugExpensePlansWithTransactions = async () => {
+  const db = getDatabase();
+
+  const query = `
+    SELECT 
+      p.expense_plan_id,
+      p.tag_id AS plan_tag_id,
+      tg.name AS tag_name,
+      p.from_date,
+      p.to_date,
+
+      t.transaction_id,
+      t.amount,
+      t.transaction_date,
+      t.tag_id AS transaction_tag_id,
+
+      -- debug so sánh tháng
+      strftime('%Y-%m', datetime(p.from_date / 1000, 'unixepoch', '+7 hours')) AS plan_month,
+      strftime('%Y-%m', datetime(t.transaction_date / 1000, 'unixepoch', '+7 hours')) AS transaction_month,
+
+      -- debug range
+      CASE 
+        WHEN t.transaction_date BETWEEN p.from_date AND p.to_date 
+        THEN 1 ELSE 0 
+      END AS in_date_range
+
+    FROM app_expense_plans p
+    LEFT JOIN app_tags tg ON tg.tag_id = p.tag_id
+    LEFT JOIN app_transactions t 
+      ON t.tag_id = p.tag_id
+    ORDER BY p.from_date DESC, t.transaction_date DESC
+  `;
+
+  const [result] = await db.executeSql(query);
+
+  const rows: any[] = [];
+  for (let i = 0; i < result.rows.length; i++) {
+    rows.push(result.rows.item(i));
+  }
+
+  console.log('==== DEBUG expense_plan + transactions ====');
+  rows.forEach(r => {
+    console.log({
+      expense_plan_id: r.expense_plan_id,
+      tag_id: r.plan_tag_id,
+      tag_name: r.tag_name,
+      plan_month: r.plan_month,
+      from_date: new Date(r.from_date).toISOString(),
+      to_date: new Date(r.to_date).toISOString(),
+
+      transaction_id: r.transaction_id,
+      transaction_amount: r.amount,
+      transaction_date: r.transaction_date
+        ? new Date(r.transaction_date).toISOString()
+        : null,
+      transaction_month: r.transaction_month,
+      same_tag: r.plan_tag_id === r.transaction_tag_id,
+      same_month: r.plan_month === r.transaction_month,
+      in_date_range: r.in_date_range === 1
+    });
+  });
+
+  return rows;
+};
 
 export const getTransactionsWithPlanPaging = async (
   groupId: string,
@@ -91,82 +156,101 @@ export const getTransactionsWithPlanPaging = async (
   expense_plan_id?: string,
   searchText?: string,
 ): Promise<Transaction[]> => {
-  try {
-    const db = getDatabase();
-    const offset = (page - 1) * pageSize;
-    let params: any[] = [groupId];
-    // JOIN động
-    let joinPlan = "";
-    if (expense_plan_id) {
-      joinPlan = `LEFT JOIN app_expense_plans p ON p.tag_id = t.tag_id AND p.expense_plan_id = ? 
-    
-    AND strftime('%Y-%m', t.transaction_date / 1000, 'unixepoch', '+7 hours')
-        = strftime('%Y-%m', p.from_date / 1000, 'unixepoch', '+7 hours')`;
-      params = [expense_plan_id, groupId];
-    }
 
-    let query = `
-    SELECT t.transaction_id, t.group_id, t.type, t.amount, t.description,
-           t.transaction_date, t.fund_id, t.member_id, t.created_at,
-           t.to_fund_id, ft.name as to_fund_name,
-           m.name as member_name, f.name as fund_name, tg.name as tag_name, tg.tag_id
+  const db = getDatabase();
+  const offset = (page - 1) * pageSize;
+
+  // 1️⃣ Lấy plan nếu có
+  let plan: ExpensePlan | null = null;
+  let planMonth: string | null = null;
+
+  console.log(expense_plan_id)
+  if (expense_plan_id) {
+    plan = await getExpensePlanById(expense_plan_id);
+    if (plan) {
+      const d = new Date(plan.from_date);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      planMonth = `${y}-${m}`; // vd: 2025-12
+    }
+  }
+
+  // 2️⃣ Build query
+  let query = `
+    SELECT
+      t.transaction_id,
+      t.group_id,
+      t.type,
+      t.amount,
+      t.description,
+      t.transaction_date,
+      t.fund_id,
+      t.member_id,
+      t.created_at,
+      t.to_fund_id,
+      ft.name AS to_fund_name,
+      f.name AS fund_name,
+      tg.name AS tag_name,
+      tg.tag_id
     FROM app_transactions t
-    LEFT JOIN app_members m ON t.member_id = m.member_id
     LEFT JOIN app_funds f ON f.fund_id = t.fund_id
     LEFT JOIN app_funds ft ON ft.fund_id = t.to_fund_id
     LEFT JOIN app_tags tg ON t.tag_id = tg.tag_id
-    ${joinPlan}
     WHERE t.group_id = ?
   `;
 
-    if (type) {
-      query += ` AND t.type = ?`;
-      params.push(type);
-    }
-
-    if (fund_id) {
-      query += ` 
-    AND (
-          t.fund_id = ? 
-          OR (t.type = 'move' AND t.to_fund_id = ?)
-        )
-  `;
-      params.push(fund_id, fund_id);
-    }
-
-    // if (fund_id) {
-    //   query += ` AND f.fund_id = ? `;
-    //   params.push(fund_id);
-    // }
-    // filter plan
-    if (expense_plan_id) {
-      query += ` AND p.expense_plan_id = ?`;
-      params.push(expense_plan_id);
-    }
-    // search
-    if (searchText) {
-      query += ` AND (t.description LIKE ? OR m.name LIKE ? OR f.name LIKE ?)`;
-      const kw = `%${searchText}%`;
-      params.push(kw, kw, kw);
-    }
-
+  let params: any[] = [groupId];
+  console.log(plan, planMonth)
+  // 3️⃣ Áp điều kiện theo plan (same tag + same month)
+  if (plan && planMonth) {
     query += `
+      AND t.tag_id = ?
+      AND strftime(
+            '%Y-%m',
+            datetime(t.transaction_date / 1000, 'unixepoch', '+7 hours')
+          ) = ?
+    `;
+    params.push(plan.tag_id, planMonth);
+  }
+
+  // 4️⃣ Filter khác
+  if (type) {
+    query += ` AND t.type = ?`;
+    params.push(type);
+  }
+
+  if (fund_id) {
+    query += `
+      AND (
+        t.fund_id = ?
+        OR (t.type = 'move' AND t.to_fund_id = ?)
+      )
+    `;
+    params.push(fund_id, fund_id);
+  }
+
+  if (searchText) {
+    const kw = `%${searchText}%`;
+    query += ` AND (t.description LIKE ? OR f.name LIKE ?)`;
+    params.push(kw, kw);
+  }
+
+  // 5️⃣ Paging
+  query += `
     ORDER BY t.transaction_date DESC
     LIMIT ? OFFSET ?
   `;
-    params.push(pageSize, offset);
+  params.push(pageSize, offset);
 
-    const [result] = await db.executeSql(query, params);
+  // 6️⃣ Execute
+  const [result] = await db.executeSql(query, params);
 
-    const rows: Transaction[] = [];
-    for (let i = 0; i < result.rows.length; i++) {
-      rows.push(result.rows.item(i));
-    }
-    console.log(rows)
-    return rows;
-  } catch (ex) {
-    console.log(ex)
+  const rows: Transaction[] = [];
+  for (let i = 0; i < result.rows.length; i++) {
+    rows.push(result.rows.item(i));
   }
+
+  return rows;
 };
 
 

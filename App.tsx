@@ -22,13 +22,13 @@ import DeptScreen from './src/screens/DeptScreen/DeptScreen'
 import SnapshotDetailScreen from './src/screens/SnapshotScreen/SnapshotDetailScreen'
 import ReportScreen from './src/screens/ReportScreen/ReportScreen';
 import { AlertProvider } from './src/providers/Alert';
-import { View } from 'react-native';
 import './src/locales/index'; // phải init trước
 import React, { useEffect } from 'react';
 import { useGroupStore } from './src/store/groupStore';
 import MemberSettingsScreen from './src/screens/MemberScreen/MemberSettingsScreen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { createChannel, scheduleDaily, checkExactAlarmPermission} from './src/services/notification.service'
 
 const Tab = createBottomTabNavigator();
 const RootStackNavigator = createStackNavigator();
@@ -152,6 +152,14 @@ function MainTabs() {
 }
 
 export default function App() {
+  useEffect(() => {
+    checkExactAlarmPermission();
+    createChannel();
+
+    // ví dụ: đổi từ 10h sang 12h
+    scheduleDaily(13, 1);
+  }, []);
+
   return (
     <DatabaseProvider>
       <PaperProvider theme={theme}>

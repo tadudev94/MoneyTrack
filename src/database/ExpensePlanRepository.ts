@@ -157,29 +157,39 @@ export const getExpensePlansPaging = async (
   return { plans, total };
 };
 
-export const getExpensePlansPagingWithSpent = async (
+export const getExpensePlansPagingWithSpent1 = async (
   page: number = 1,
   pageSize: number = 20,
   tagId?: string,
-  searchText?: string
+  searchText?: string,
+  month?: Date
 ): Promise<{ plans: (ExpensePlan & { total_spent: number })[]; total: number }> => {
-  const db = getDatabase();
-  const offset = (page - 1) * pageSize;
+  try {
+    console.log(month?.toISOString())
+    const db = getDatabase();
+    const offset = (page - 1) * pageSize;
 
-  const params: any[] = [];
-  let whereClause = 'WHERE 1=1';
+    const params: any[] = [];
+    let whereClause = 'WHERE 1=1';
 
-  if (tagId) {
-    whereClause += ' AND p.tag_id = ?';
-    params.push(tagId);
-  }
+    if (tagId) {
+      whereClause += ' AND p.tag_id = ?';
+      params.push(tagId);
+    }
 
-  if (searchText) {
-    whereClause += ' AND t.name LIKE ?';
-    params.push(`%${searchText}%`);
-  }
+    if (searchText) {
+      whereClause += ' AND t.name LIKE ?';
+      params.push(`%${searchText}%`);
+    }
 
-  const query = `
+    if (month) {
+      whereClause += ` AND strftime('%Y-%m', datetime(tr.transaction_date / 1000, 'unixepoch', '+7 hours')) = 
+    strftime('%Y-%m', datetime(? / 1000, 'unixepoch', '+7 hours'))
+    `;
+      params.push(month.getTime());
+    }
+
+    const query = `
     SELECT 
       p.*,
       t.name AS tag_name,
@@ -195,24 +205,211 @@ export const getExpensePlansPagingWithSpent = async (
     ORDER BY p.from_date DESC
     LIMIT ? OFFSET ?
   `;
-  params.push(pageSize, offset);
+    params.push(pageSize, offset);
 
-  const [result] = await db.executeSql(query, params);
-  const plans: (ExpensePlan & { total_spent: number })[] = Array.from(
-    { length: result.rows.length },
-    (_, i) => result.rows.item(i) as any
-  );
+    const [result] = await db.executeSql(query, params);
+    const plans: (ExpensePlan & { total_spent: number })[] = Array.from(
+      { length: result.rows.length },
+      (_, i) => result.rows.item(i) as any
+    );
 
-  // Query tổng số plan
-  const countQuery = `
+    // Query tổng số plan
+    const countQuery = `
     SELECT COUNT(*) AS count
     FROM app_expense_plans p
     LEFT JOIN app_tags t ON p.tag_id = t.tag_id
+    LEFT JOIN app_transactions tr
+      ON tr.tag_id = p.tag_id
+      AND strftime('%Y-%m', datetime(tr.transaction_date / 1000, 'unixepoch', '+7 hours')) = 
+    strftime('%Y-%m', datetime(p.from_date / 1000, 'unixepoch', '+7 hours'))
     ${whereClause}
   `;
-  const [countResult] = await db.executeSql(countQuery, params.slice(0, params.length - 2)); // loại bỏ LIMIT/OFFSET
-  const total = countResult.rows.item(0).count;
+    const [countResult] = await db.executeSql(countQuery, params.slice(0, params.length - 2)); // loại bỏ LIMIT/OFFSET
+    const total = countResult.rows.item(0).count;
 
-  return { plans, total };
+    return { plans, total };
+  }
+  catch (ex) {
+    console.log(ex);
+  }
 };
 
+export const getExpensePlansPagingWithSpent2 = async (
+  page: number = 1,
+  pageSize: number = 20,
+  tagId?: string,
+  searchText?: string,
+  month?: Date
+): Promise<{ plans: (ExpensePlan & { total_spent: number })[]; total: number }> => {
+  try {
+    const db = getDatabase();
+    const offset = (page - 1) * pageSize;
+
+    const params: any[] = [];
+    let whereClause = 'WHERE 1=1';
+
+    if (tagId) {
+      whereClause += ' AND p.tag_id = ?';
+      params.push(tagId);
+    }
+
+    if (searchText) {
+      whereClause += ' AND t.name LIKE ?';
+      params.push(`%${searchText}%`);
+    }
+
+    // 👉 KHÔNG lọc month trong WHERE nữa
+
+    const joinMonthCondition = month
+      ? `
+        AND strftime('%Y-%m', datetime(tr.transaction_date / 1000, 'unixepoch', '+7 hours')) =
+            strftime('%Y-%m', datetime(? / 1000, 'unixepoch', '+7 hours'))
+      `
+      : '';
+
+    if (month) {
+      params.push(month.getTime());
+    }
+
+    const query = `
+      SELECT 
+        p.*,
+        t.name AS tag_name,
+        IFNULL(SUM(tr.amount), 0) AS total_spent
+      FROM app_expense_plans p
+      LEFT JOIN app_tags t ON p.tag_id = t.tag_id
+      LEFT JOIN app_transactions tr
+        ON tr.tag_id = p.tag_id
+        ${joinMonthCondition}
+      ${whereClause}
+      GROUP BY p.expense_plan_id
+      ORDER BY p.from_date DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    params.push(pageSize, offset);
+
+    const [result] = await db.executeSql(query, params);
+    const plans = Array.from(
+      { length: result.rows.length },
+      (_, i) => result.rows.item(i)
+    ) as (ExpensePlan & { total_spent: number })[];
+
+    // -------- COUNT QUERY (sửa tương tự) --------
+    const countParams = params.slice(0, params.length - 2);
+
+    const countQuery = `
+      SELECT COUNT(DISTINCT p.expense_plan_id) AS count
+      FROM app_expense_plans p
+      LEFT JOIN app_tags t ON p.tag_id = t.tag_id
+      LEFT JOIN app_transactions tr
+        ON tr.tag_id = p.tag_id
+        ${joinMonthCondition}
+      ${whereClause}
+    `;
+
+    const [countResult] = await db.executeSql(countQuery, countParams);
+    const total = countResult.rows.item(0).count;
+
+    return { plans, total };
+  } catch (ex) {
+    console.log(ex);
+    throw ex;
+  }
+};
+
+export const getExpensePlansPagingWithSpent = async (
+  page: number = 1,
+  pageSize: number = 20,
+  tagId?: string,
+  searchText?: string,
+  month?: Date
+): Promise<{ plans: (ExpensePlan & { total_spent: number })[]; total: number }> => {
+  try {
+    const db = getDatabase();
+    const offset = (page - 1) * pageSize;
+
+    const params: any[] = [];
+    let whereClause = 'WHERE 1=1';
+
+    // ---------- Filter theo tag ----------
+    if (tagId) {
+      whereClause += ' AND p.tag_id = ?';
+      params.push(tagId);
+    }
+
+    // ---------- Search theo tên tag ----------
+    if (searchText) {
+      whereClause += ' AND t.name LIKE ?';
+      params.push(`%${searchText}%`);
+    }
+
+    // ---------- Filter PLAN theo tháng ----------
+    if (month) {
+      whereClause += `
+        AND strftime('%Y-%m', datetime(p.from_date / 1000, 'unixepoch', '+7 hours')) =
+            strftime('%Y-%m', datetime(? / 1000, 'unixepoch', '+7 hours'))
+      `;
+      params.push(month.getTime()); // (1) param cho WHERE
+    }
+
+    // ---------- Filter TRANSACTION theo tháng (JOIN) ----------
+    const joinMonthCondition = month
+      ? `
+        AND strftime('%Y-%m', datetime(tr.transaction_date / 1000, 'unixepoch', '+7 hours')) =
+            strftime('%Y-%m', datetime(? / 1000, 'unixepoch', '+7 hours'))
+      `
+      : '';
+
+    if (month) {
+      params.push(month.getTime()); // (2) param cho JOIN
+    }
+
+    // ---------- MAIN QUERY ----------
+    const query = `
+      SELECT 
+        p.*,
+        t.name AS tag_name,
+        IFNULL(SUM(tr.amount), 0) AS total_spent
+      FROM app_expense_plans p
+      LEFT JOIN app_tags t ON p.tag_id = t.tag_id
+      LEFT JOIN app_transactions tr
+        ON tr.tag_id = p.tag_id
+        ${joinMonthCondition}
+      ${whereClause}
+      GROUP BY p.expense_plan_id
+      ORDER BY p.from_date DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    params.push(pageSize, offset);
+
+    const [result] = await db.executeSql(query, params);
+
+    const plans = Array.from(
+      { length: result.rows.length },
+      (_, i) => result.rows.item(i)
+    ) as (ExpensePlan & { total_spent: number })[];
+
+    // ---------- COUNT QUERY ----------
+    const countParams = params.slice(0, params.length - 2); // bỏ LIMIT & OFFSET
+
+    const countQuery = `
+      SELECT COUNT(DISTINCT p.expense_plan_id) AS count
+      FROM app_expense_plans p
+      LEFT JOIN app_tags t ON p.tag_id = t.tag_id
+      LEFT JOIN app_transactions tr
+        ON tr.tag_id = p.tag_id
+        ${joinMonthCondition}
+      ${whereClause}
+    `;
+
+    const [countResult] = await db.executeSql(countQuery, countParams);
+    const total = countResult.rows.item(0).count;
+
+    return { plans, total };
+  } catch (ex) {
+    console.log(ex);
+    throw ex;
+  }
+};

@@ -98,4 +98,77 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
   },
   payBtnText: { color: '#fff', textAlign: 'center', fontWeight: '600' },
+  summaryCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+
+  summaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#222',
+  },
+
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  summaryBox: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#f5f7fa',
+    marginHorizontal: 4,
+  },
+
+  summaryLabel: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 6,
+  },
+
+  planAmount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1976d2', // xanh kế hoạch
+  },
+
+  spentAmount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#d32f2f', // đỏ chi tiêu
+  },
+  remainingBox: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#eef4ff',
+    alignItems: 'center',
+  },
+
+  remainingAmount: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#2e7d32', // còn tiền
+  },
+
+  overSpent: {
+    color: '#c62828', // vượt kế hoạch
+  },
 });

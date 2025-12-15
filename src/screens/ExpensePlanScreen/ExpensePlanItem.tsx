@@ -40,10 +40,10 @@ export const ExpensePlanItem = React.memo(
   }: ExpensePlanItemProps) => {
 
     const navigation = useNavigation();
-    console.log(item)
-    const handleClick = () => {
+    const handleClick = (tagId) => {
       navigation.navigate('ExpensePlanDetail', {
         typeInput: 'expense_plan',
+        tagInputId: tagId,
         expense_plan_id: item.expense_plan_id
       });
     };
@@ -106,7 +106,7 @@ export const ExpensePlanItem = React.memo(
             }
           >
             <View style={styles.itemCard}>
-              <Pressable onPress={() => handleClick()}>
+              <Pressable onPress={() => handleClick(item.tag_id)}>
                 <Icon name="calendar-range" size={24} color="#246ee6ff" />
               </Pressable>
               <View style={{ marginLeft: 10, flex: 1 }}>

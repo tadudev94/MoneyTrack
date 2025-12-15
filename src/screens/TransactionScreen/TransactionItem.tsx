@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -11,6 +12,7 @@ import {
   State,
 } from 'react-native-gesture-handler';
 import { styles } from './TransactionScreen.style';
+import { useNavigation } from '@react-navigation/native';
 
 type TransactionItemProps = {
   item: any;
@@ -37,6 +39,7 @@ export const TransactionItem = React.memo(
     setActiveId,
   }: TransactionItemProps) => {
 
+    const navigation = useNavigation();
     const handleLongPress = (event: any, id: string) => {
       if (event.nativeEvent.state === State.ACTIVE) {
         // đóng item đang mở
@@ -105,13 +108,12 @@ export const TransactionItem = React.memo(
                 <Text style={[styles.walletTag, styles.fundTag]}>
                   {item.fund_name || 'Ví chính'}
                 </Text>
-
-                {/* Tag */}
                 {item.tag_name ? (
-                  <Text style={[styles.walletTag, styles.expenseTag]}>
-                    {item.tag_name}
-                  </Text>
-                ) : null}
+                  <Pressable onPress={() => { }}>
+                    <Text style={[styles.walletTag, styles.expenseTag]}>
+                      {item.tag_name}
+                    </Text>
+                  </Pressable>) : null}
               </View>
               <Text style={[styles.itemAmount, { color: type == 'income' ? '#2e7d32' : "#c62828" }]}>
                 {type == 'income' ? '+' : "-"} {item.amount.toLocaleString('vi-VN')} đ

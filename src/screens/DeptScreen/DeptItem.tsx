@@ -39,7 +39,6 @@ export const DeptItem = React.memo(
     activeId,
     setActiveId,
   }: DeptItemProps) => {
-    console.log(item)
     const navigation = useNavigation();
     const handleClick = () => {
       navigation.navigate('DeptDetail', {

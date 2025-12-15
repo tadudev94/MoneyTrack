@@ -12,7 +12,6 @@ import { usePaging } from '../../hooks/usePaging';
 import {
   getCountTransByGroup,
   getTotalTransByGroup,
-  getTransactionsByGroupPaging,
   getTransactionsWithPlanPaging,
   Transaction,
 } from '../../database/TransactionRepository';
@@ -31,8 +30,6 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useTagStore } from '../../store/tagStore';
 
 type TransactionScreenProps = {
-  // type: any;
-  // tag_id?: string;
   route: any;
   navigation: any;
 };
@@ -41,8 +38,8 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
   const { typeInput, expense_plan_id } = route.params || {};
   let type = '';
   if (typeInput == 'expense_plan') {
-    type = 'expense'
     console.log(expense_plan_id)
+    type = 'expense'
   }
   else {
     type = typeInput ?? "income"
@@ -72,7 +69,6 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
   const [enabledMap, setEnabledMap] = useState<Record<string, boolean>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const lastTran = useTransactionStore(s => s.lastUpdated);
-  console.log(lastTran, 'lasttra')
   const [showHelp, setShowHelp] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -97,6 +93,7 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
         page,
         pageSize,
         type,
+        fundId,
         expense_plan_id,
         params.keyword || '', // lấy từ params (keyword) chứ không lấy trực tiếp searchText
       ).then(rows => {
@@ -164,7 +161,6 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
       });
       Toast.show({ type: 'success', text1: 'Đã cập nhật ' + type });
     } else {
-      console.log(fundId, 'aaaaaaaaaaaaaaaaa')
       if (fundId) {
         const creRes = await addTransaction({
           group_id: group.group_id,

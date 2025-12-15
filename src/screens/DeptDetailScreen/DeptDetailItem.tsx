@@ -37,7 +37,6 @@ export const TransactionItem = React.memo(
     activeId,
     setActiveId,
   }: TransactionItemProps) => {
-    console.log(item);
     const handleLongPress = (event: any, id: string) => {
       if (event.nativeEvent.state === State.ACTIVE) {
         // đóng item đang mở
