@@ -26,8 +26,6 @@ import { TransactionItem } from './TransactionItem';
 import { useFundStore } from '../../store/fundStore';
 import DatePicker from '../../components/shared/DatePicker';
 import { getAllTags } from '../../database/TagRepository';
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
-import { useTagStore } from '../../store/tagStore';
 
 type TransactionScreenProps = {
   route: any;
@@ -35,10 +33,9 @@ type TransactionScreenProps = {
 };
 
 const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
-  const { typeInput, expense_plan_id } = route.params || {};
+  const { typeInput, expense_plan_id, monthFilter } = route.params || {};
   let type = '';
   if (typeInput == 'expense_plan') {
-    console.log(expense_plan_id)
     type = 'expense'
   }
   else {
@@ -63,6 +60,7 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
   const [desc, setDesc] = useState('');
   const [editTransaction, setEditTransaction] = useState<any>(null);
   const [date, setDate] = useState<Date>(new Date());
+  const [dateFilter, setDateFilter] = useState<Date>(new Date());
 
   // Quản lý swipe refs + state
   const swipeableRefs = useRef<Record<string, any>>({});
@@ -78,11 +76,11 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
   const resetFilter = () => {
     setSearchText('');
     setShowSearch(false);
-    setParams({ keyword: '' });
+    setParams({ keyword: '', month: new Date() });
   };
 
   const handleSearch = () => {
-    reset({ keyword: searchText }); // reset paging với keyword mới
+    reset({ ...params, keyword: searchText }); // reset paging với keyword mới
   };
 
   const fetchTransactions = useCallback(
@@ -93,9 +91,11 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
         page,
         pageSize,
         type,
-        fundId,
+        '',
         expense_plan_id,
         params.keyword || '', // lấy từ params (keyword) chứ không lấy trực tiếp searchText
+        params.month || ''
+
       ).then(rows => {
         return rows.map(r => ({ ...r }))
       });
@@ -127,9 +127,13 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
     calSumary();
     if (group) {
       loadFundsByGroup(group?.group_id)
-
     }
   }, [group?.group_id, params]);
+
+
+  useEffect(() => {
+    reset({ ...params, month: dateFilter });
+  }, [dateFilter]);
 
   useEffect(() => {
     if (group?.group_id) {
@@ -155,6 +159,7 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
       await updateTransaction({
         ...editTransaction,
         tag_id: tagSelected,
+        fund_id: fundId,
         description: desc || type,
         transaction_date: date.getTime(),
         amount: parseInt(amount, 10),
@@ -261,6 +266,11 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
         <Text style={styles.summaryDetail}>
           {countTransaction} khoản – {totalTransaction.toLocaleString('vi-VN')} đ
         </Text>
+        <DatePicker
+          value={dateFilter}
+          onChange={setDateFilter}
+          mode="date"
+        />
       </View>
 
       {showSearch && (
@@ -288,6 +298,7 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
           </TouchableOpacity>
         </View>
       )}
+
       {/* List */}
       <FlatList
         data={transData}
@@ -363,7 +374,7 @@ const TransactionScreen = ({ route, navigation }: TransactionScreenProps) => {
                 value={date}
                 onChange={setDate}
                 mode="date"
-                maximumDate={new Date()}
+                // maximumDate={new Date()}
               />
             </View>
           </>

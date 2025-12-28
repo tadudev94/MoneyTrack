@@ -155,6 +155,7 @@ export const getTransactionsWithPlanPaging = async (
   fund_id?: string,
   expense_plan_id?: string,
   searchText?: string,
+  month?: Date
 ): Promise<Transaction[]> => {
 
   const db = getDatabase();
@@ -173,6 +174,14 @@ export const getTransactionsWithPlanPaging = async (
       const m = String(d.getMonth() + 1).padStart(2, '0');
       planMonth = `${y}-${m}`; // vd: 2025-12
     }
+  }
+
+  let filterMonth: string | null = null;
+  if (month) {
+    const d = new Date(month);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    filterMonth = `${y}-${m}`; // vd: 2025-12
   }
 
   // 2️⃣ Build query
@@ -213,6 +222,17 @@ export const getTransactionsWithPlanPaging = async (
     params.push(plan.tag_id, planMonth);
   }
 
+  if (month) {
+    query += `
+      AND strftime(
+            '%Y-%m',
+            datetime(t.transaction_date / 1000, 'unixepoch', '+7 hours')
+          ) = ?
+    `;
+    params.push(filterMonth);
+  }
+
+
   // 4️⃣ Filter khác
   if (type) {
     query += ` AND t.type = ?`;
@@ -249,7 +269,13 @@ export const getTransactionsWithPlanPaging = async (
   for (let i = 0; i < result.rows.length; i++) {
     rows.push(result.rows.item(i));
   }
-
+  console.log(rows, groupId,
+    page,
+    pageSize,
+    type,
+    fund_id,
+    expense_plan_id,
+    searchText)
   return rows;
 };
 
